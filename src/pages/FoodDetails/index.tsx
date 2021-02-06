@@ -61,6 +61,10 @@ interface Food {
   extras: Extra[];
 }
 
+interface Favorite {
+  id: number;
+}
+
 const FoodDetails: React.FC = () => {
   const [food, setFood] = useState({} as Food);
   const [extras, setExtras] = useState<Extra[]>([]);
@@ -86,6 +90,16 @@ const FoodDetails: React.FC = () => {
     }
 
     loadFood();
+  }, [routeParams]);
+
+  useEffect(() => {
+    async function loadIsFavorite(): Promise<void> {
+      const response = await api.get<Favorite>(`/favorites/${routeParams.id}`);
+
+      if (response.data.id === routeParams.id) setIsFavorite(true);
+    }
+
+    loadIsFavorite();
   }, [routeParams]);
 
   function handleIncrementExtra(id: number): void {
@@ -114,8 +128,14 @@ const FoodDetails: React.FC = () => {
     if (foodQuantity > 1) setFoodQuantity(foodQuantity - 1);
   }
 
-  const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
+  const toggleFavorite = useCallback(async () => {
+    if (isFavorite) {
+      await api.delete(`/favorites/${food.id}`);
+    } else {
+      await api.post('/favorites', food);
+    }
+
+    setIsFavorite(!isFavorite);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
